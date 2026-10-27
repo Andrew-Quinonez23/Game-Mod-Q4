@@ -22,7 +22,7 @@ public:
 
 	void					Save( idSaveGame *saveFile ) const;
 	void					Restore( idRestoreGame *saveFile );
-	void					PreSave				( void );
+	void					PreSave				( void ); 
 	void					PostSave			( void );
 
 
@@ -97,9 +97,9 @@ void rvWeaponRocketLauncher::Spawn ( void ) {
 	idleEmpty = false;
 	
 	spawnArgs.GetFloat ( "lockRange", "0", guideRange );
-
+	
 	spawnArgs.GetFloat ( "lockSlowdown", ".25", f );
-	attackDict.GetFloat ( "speed", "0", guideSpeedFast );
+	attackDict.GetFloat("speed", "0", guideSpeedFast);
 	guideSpeedSlow = guideSpeedFast * f;
 	
 	reloadRate = SEC2MS ( spawnArgs.GetFloat ( "reloadRate", ".8" ) );
@@ -304,7 +304,7 @@ void rvWeaponRocketLauncher::PreSave ( void ) {
 rvWeaponRocketLauncher::PostSave
 ================
 */
-void rvWeaponRocketLauncher::PostSave ( void ) {
+void rvWeaponRocketLauncher:: PostSave ( void ) {
 }
 
 
@@ -445,8 +445,9 @@ stateResult_t rvWeaponRocketLauncher::State_Fire ( const stateParms_t& parms ) {
 	};	
 	switch ( parms.stage ) {
 		case STAGE_INIT:
+			
 			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));		
-			Attack ( false, 1, spread, 0, 1.0f );
+			Attack ( false, 5, 5, 0, 1.0f );
 			PlayAnim ( ANIMCHANNEL_LEGS, "fire", parms.blendFrames );	
 			return SRESULT_STAGE ( STAGE_WAIT );
 	
