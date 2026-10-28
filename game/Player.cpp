@@ -1097,6 +1097,7 @@ idPlayer::idPlayer() {
 	healingPulseCooldownTime = 0;
 	emergencyRecoveryEndTime = 0;
 	emergencyRecoveryCooldownTime = 0;
+	playerCredits = 0;
 	playerXP = 0;
 	playerLevel = 1;
 	heroType = 1;
@@ -8460,9 +8461,11 @@ idPlayer::PerformImpulse
 void idPlayer::SetHero(int hero) {
 	heroType = hero;
 }
+
 void idPlayer::AddXP(int amount) {
 	playerXP = playerXP + amount;
 	gameLocal.Printf("Total XP:%d\n", playerXP);
+
 	if (playerXP >= 700) {
 		playerLevel = 5;
 	}
@@ -8478,7 +8481,19 @@ void idPlayer::AddXP(int amount) {
 	else {
 		playerLevel = 1;
 	}
-}void idPlayer::HealFromLifeSteal(int damage) {
+}
+
+void idPlayer::AddCredits(int amount) {
+	if (amount <= 0) {
+		return;
+	}
+
+	playerCredits = playerCredits + amount;
+
+	gameLocal.Printf("+%d Credits! Total: %d\n", amount, playerCredits);
+}
+
+void idPlayer::HealFromLifeSteal(int damage) {
 	if (heroType != 2) {
 		return;
 	}
