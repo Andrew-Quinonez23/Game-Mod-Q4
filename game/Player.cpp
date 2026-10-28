@@ -1078,7 +1078,9 @@ idPlayer::idPlayer
 */
 idPlayer::idPlayer() {
 	memset( &usercmd, 0, sizeof( usercmd ) );
-
+	dashCooldownTime = 0;
+	playerXP = 0;
+	playerLevel = 1;
 	alreadyDidTeamAnnouncerSound = false;
 
 	doInitWeapon			= false;
@@ -8430,6 +8432,26 @@ void idPlayer::GenerateImpulseForBuyAttempt( const char* itemName ) {
 idPlayer::PerformImpulse
 ==============
 */
+void idPlayer::AddXP(int amount) {
+	playerXP = playerXP + amount;
+	gameLocal.Printf("Total XP:%d\n", playerXP);
+	if (playerXP >= 700) {
+		playerLevel = 5;
+	}
+	else if (playerXP >= 450) {
+		playerLevel = 4;
+	}
+	else if (playerXP >= 250) {
+		playerLevel = 3;
+	}
+	else if (playerXP >= 100) {
+		playerLevel = 2;
+	}
+	else {
+		playerLevel = 1;
+	}
+}
+
 void idPlayer::PerformImpulse( int impulse ) {
 
 //RAVEN BEGIN
