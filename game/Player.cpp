@@ -8600,7 +8600,38 @@ void idPlayer::PerformImpulse( int impulse ) {
 		case IMPULSE_105:	AttemptToBuyItem( "weapon_rocketlauncher" );		break;
 		case IMPULSE_106:	AttemptToBuyItem( "weapon_railgun" );				break;
 		case IMPULSE_107:	AttemptToBuyItem( "weapon_lightninggun" );			break;
-		case IMPULSE_108:	break; // Unused
+		case IMPULSE_108:	
+		{
+			if (playerLevel < 2)
+			{
+				break;
+			}
+
+			if (gameLocal.time < dashCooldownTime)
+			{
+				break;
+			}
+			idVec3 forward;
+			idVec3 velocity;
+			viewAngles.ToVectors(&forward, NULL, NULL);
+			forward.z = 0;
+			forward.Normalize();
+			velocity = physicsObj.GetLinearVelocity();
+			if (playerLevel >= 3)
+			{
+				velocity.x = forward.x * 1100;
+				velocity.y = forward.y * 1100;
+			}
+			else
+			{
+				velocity.x = forward.x * 800;
+				velocity.y = forward.y * 800;
+			}
+			physicsObj.SetLinearVelocity(velocity);
+			dashCooldownTime = gameLocal.time + 1000;
+			break;
+		}
+
 		case IMPULSE_109:	AttemptToBuyItem( "weapon_napalmgun" );				break;
 		case IMPULSE_110:	/* AttemptToBuyItem( "weapon_dmg" );*/				break;
 		case IMPULSE_111:	break; // Unused
