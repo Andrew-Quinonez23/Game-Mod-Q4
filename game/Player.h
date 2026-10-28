@@ -296,7 +296,9 @@ public:
 	idAngles				spawnAngles;
 	idAngles				viewAngles;			// player view angles
 	idAngles				cmdAngles;			// player cmd angles
-
+	int						dashCooldownTime;
+	int						playerXP;
+	int						playerLevel;
 	int						buttonMask;
 	int						oldButtons;
 	int						oldFlags;
@@ -621,6 +623,7 @@ public:
 	int						GetItemCost(const char* itemName);
 // RITUAL END
 	void					PerformImpulse( int impulse );
+	void					AddXP(int amount);
 	void					Spectate( bool spectate, bool force = false );
  	void					ToggleObjectives ( void );
  	void					ToggleScoreboard( void );

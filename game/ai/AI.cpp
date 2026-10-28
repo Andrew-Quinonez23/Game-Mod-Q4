@@ -1626,7 +1626,10 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	}
 
 	aifl.dead = true;
-
+	if (!gameLocal.isMultiplayer && attacker && attacker->IsType(idPlayer::GetClassType())) {
+		idPlayer *player = static_cast <idPlayer*>(attacker);
+		player->AddXP(100);
+	}
 	// turn off my flashlight, if I had one
 	ProcessEvent( &AI_Flashlight, false );
 
