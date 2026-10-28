@@ -585,6 +585,62 @@ Sets client to godmode
 argv(0) god
 ==================
 */
+void Cmd_Hero_f(const idCmdArgs &args) {
+	idPlayer *player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	if (args.Argc() < 2) {
+		gameLocal.Printf("Use: hero 1, hero 2, or hero 3\n");
+		return;
+	}
+
+	int hero = atoi(args.Argv(1));
+
+	if (hero < 1 || hero > 3) {
+		gameLocal.Printf("Invalid hero.\n");
+		return;
+	}
+
+	player->SetHero(hero);
+
+	if (hero == 1) {
+		gameLocal.Printf("You selected Vanguard!\n");
+	}
+	else if (hero == 2) {
+		gameLocal.Printf("You selected Striker!\n");
+	}
+	else {
+		gameLocal.Printf("You selected Medic\n");
+	}
+}
+
+// Your existing function stays below
+void Cmd_PlayerStatus_f(const idCmdArgs &args) {
+	idPlayer *player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		gameLocal.Printf("No player found.\n");
+		return;
+	}
+
+	gameLocal.Printf("--------------------\n");
+	gameLocal.Printf("Level: %d\n", player->GetLevel());
+	gameLocal.Printf("Total XP: %d\n", player->GetXP());
+	gameLocal.Printf("--------------------\n");
+	if (player->GetHero() == 1) {
+		gameLocal.Printf("Hero: Vanguard\n");
+	}
+	else if (player->GetHero() == 2) {
+		gameLocal.Printf("Hero: Striker\n");
+	}
+	else if (player->GetHero() == 3) {
+		gameLocal.Printf("Hero: Medic\n");
+	}
+}
 void Cmd_God_f( const idCmdArgs &args ) {
 	char		*msg;
 	idPlayer	*player;
@@ -3047,6 +3103,8 @@ so it can perform tab completion
 =================
 */
 void idGameLocal::InitConsoleCommands( void ) {
+cmdSystem->AddCommand("playerstatus", Cmd_PlayerStatus_f, CMD_FL_GAME, "shows player level and XP");
+cmdSystem->AddCommand("hero", Cmd_Hero_f, CMD_FL_GAME, "select your hero");
 // RAVEN BEGIN
 // jscott: typeinfo gone - didn't work, it was unfinished
 //	cmdSystem->AddCommand( "listTypeInfo",			ListTypeInfo_f,				CMD_FL_GAME,				"list type info" );

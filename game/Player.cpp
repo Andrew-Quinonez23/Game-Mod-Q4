@@ -1079,8 +1079,28 @@ idPlayer::idPlayer
 idPlayer::idPlayer() {
 	memset( &usercmd, 0, sizeof( usercmd ) );
 	dashCooldownTime = 0;
+	ShockwaveCooldownTime = 0;
+	fortifyEndTime = 0;
+	fortifyCooldownTime = 0;
+	speedBoostEndTime = 0;
+	speedBoostCooldownTime = 0;
+	berserkEndTime = 0;
+	berserkCooldownTime = 0;
+	lifeStealEndTime = 0;
+	lifeStealCooldownTime = 0;
+	rapidFireEndTime = 0;
+	rapidFireCooldownTime = 0;
+	healCooldownTime = 0;
+	regenEndTime = 0;
+	regenCooldownTime = 0;
+	regenNextHealTime = 0;
+	healingPulseCooldownTime = 0;
+	emergencyRecoveryEndTime = 0;
+	emergencyRecoveryCooldownTime = 0;
 	playerXP = 0;
 	playerLevel = 1;
+	heroType = 1;
+
 	alreadyDidTeamAnnouncerSound = false;
 
 	doInitWeapon			= false;
@@ -4365,7 +4385,12 @@ float idPlayer::PowerUpModifier( int type ) {
 			}
 		}
 	}
-
+	// Striker Rapid Fire
+	if (heroType == 2 && gameLocal.time < rapidFireEndTime) {
+		if (type == PMOD_FIRERATE) {
+			mod *= (2.0f / 3.0f);
+		}
+	}
 	return mod;
 }
 
@@ -8432,6 +8457,9 @@ void idPlayer::GenerateImpulseForBuyAttempt( const char* itemName ) {
 idPlayer::PerformImpulse
 ==============
 */
+void idPlayer::SetHero(int hero) {
+	heroType = hero;
+}
 void idPlayer::AddXP(int amount) {
 	playerXP = playerXP + amount;
 	gameLocal.Printf("Total XP:%d\n", playerXP);
@@ -8449,6 +8477,24 @@ void idPlayer::AddXP(int amount) {
 	}
 	else {
 		playerLevel = 1;
+	}
+}void idPlayer::HealFromLifeSteal(int damage) {
+	if (heroType != 2) {
+		return;
+	}
+
+	if (gameLocal.time >= lifeStealEndTime) {
+		return;
+	}
+
+	if (damage <= 0) {
+		return;
+	}
+
+	health = health + damage / 4;
+
+	if (health > 100) {
+		health = 100;
 	}
 }
 
@@ -8497,126 +8543,134 @@ void idPlayer::PerformImpulse( int impulse ) {
 #endif
 //RAVEN END
 
-	switch( impulse ) {
-		case IMPULSE_13: {
-			Reload();
-			break;
+	switch (impulse) {
+	case IMPULSE_13: {
+		Reload();
+		break;
+	}
+	case IMPULSE_14: {
+		NextWeapon();
+		if (gameLocal.isServer && spectating && gameLocal.gameType == GAME_TOURNEY) {
+			((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->SpectateCycleNext(this);
 		}
-		case IMPULSE_14: {
-			NextWeapon();
-			if( gameLocal.isServer && spectating && gameLocal.gameType == GAME_TOURNEY ) {	
-				((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->SpectateCycleNext( this );
-			}
-			break;
+		break;
+	}
+	case IMPULSE_15: {
+		PrevWeapon();
+		if (gameLocal.isServer && spectating && gameLocal.gameType == GAME_TOURNEY) {
+			((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->SpectateCyclePrev(this);
 		}
-		case IMPULSE_15: {
-			PrevWeapon();
-			if( gameLocal.isServer && spectating && gameLocal.gameType == GAME_TOURNEY ) {	
-				((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->SpectateCyclePrev( this );
-			}
-			break;
+		break;
+	}
+	case IMPULSE_17: {
+		if (gameLocal.isClient || entityNumber == gameLocal.localClientNum) {
+			gameLocal.mpGame.ToggleReady();
 		}
-		case IMPULSE_17: {
- 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
- 				gameLocal.mpGame.ToggleReady( );
-			}
-			break;
-		}
-		case IMPULSE_18: {
-			centerView.Init(gameLocal.time, 200, viewAngles.pitch, 0);
-			break;
-		}
-		case IMPULSE_19: {
-/*		
-			// when we're not in single player, IMPULSE_19 is used for showScores
-			// otherwise it does IMPULSE_12 (PDA)
-			if ( !gameLocal.isMultiplayer ) {
-				if ( !objectiveSystemOpen ) {
-					if ( weapon ) {
-						weapon->Hide ();
+		break;
+	}
+	case IMPULSE_18: {
+		centerView.Init(gameLocal.time, 200, viewAngles.pitch, 0);
+		break;
+	}
+	case IMPULSE_19: {
+		/*
+					// when we're not in single player, IMPULSE_19 is used for showScores
+					// otherwise it does IMPULSE_12 (PDA)
+					if ( !gameLocal.isMultiplayer ) {
+						if ( !objectiveSystemOpen ) {
+							if ( weapon ) {
+								weapon->Hide ();
+							}
+						}
+						ToggleMap();
 					}
+		*/
+		break;
+	}
+	case IMPULSE_20: {
+		if (gameLocal.isClient || entityNumber == gameLocal.localClientNum) {
+			gameLocal.mpGame.ToggleTeam();
+		}
+		break;
+	}
+	case IMPULSE_21: {
+		if (gameLocal.isServer && gameLocal.gameType == GAME_TOURNEY) {
+			// only allow a client to join the waiting arena if they are not currently assigned to an arena
+
+			// removed waiting arena functionality for now
+			/*rvTourneyArena& arena = ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetArena( GetArena() );
+
+			if( this != arena.GetPlayers()[ 0 ] && this != arena.GetPlayers()[ 1 ] ) {
+				if( instance == MAX_ARENAS && !spectating ) {
+					ServerSpectate( true );
+					JoinInstance( ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetNextActiveArena( 0 ) );
+				} else if( spectating ) {
+					JoinInstance( MAX_ARENAS );
+					ServerSpectate( false );
 				}
-				ToggleMap();
-			}
-*/
-			break;
+			}*/
 		}
-		case IMPULSE_20: {
- 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
- 				gameLocal.mpGame.ToggleTeam( );
-			}
-			break;
+		break;
+	}
+	case IMPULSE_22: {
+		if (gameLocal.isClient || entityNumber == gameLocal.localClientNum) {
+			gameLocal.mpGame.ToggleSpectate();
 		}
-		case IMPULSE_21: {
-			if( gameLocal.isServer && gameLocal.gameType == GAME_TOURNEY ) {
-				// only allow a client to join the waiting arena if they are not currently assigned to an arena
+		break;
+	}
 
-				// removed waiting arena functionality for now
-				/*rvTourneyArena& arena = ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetArena( GetArena() );
-
-				if( this != arena.GetPlayers()[ 0 ] && this != arena.GetPlayers()[ 1 ] ) {
-					if( instance == MAX_ARENAS && !spectating ) {
-						ServerSpectate( true );
-						JoinInstance( ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetNextActiveArena( 0 ) );
-					} else if( spectating ) {
-						JoinInstance( MAX_ARENAS );
-						ServerSpectate( false );
-					}
-				}*/
-			}
-			break;
+	case IMPULSE_28: {
+		if (gameLocal.isClient || entityNumber == gameLocal.localClientNum) {
+			gameLocal.mpGame.CastVote(gameLocal.localClientNum, true);
 		}
-		case IMPULSE_22: {
- 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
- 				gameLocal.mpGame.ToggleSpectate( );
-   			}
-   			break;
-   		}
-				
-		case IMPULSE_28: {
- 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
- 				gameLocal.mpGame.CastVote( gameLocal.localClientNum, true );
-   			}
-   			break;
-   		}
-   		case IMPULSE_29: {
- 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
-				gameLocal.mpGame.CastVote( gameLocal.localClientNum, false );
-   			}
-   			break;
-   		}
-		case IMPULSE_40: {
-			idFuncRadioChatter::RepeatLast();
-			break;
+		break;
+	}
+	case IMPULSE_29: {
+		if (gameLocal.isClient || entityNumber == gameLocal.localClientNum) {
+			gameLocal.mpGame.CastVote(gameLocal.localClientNum, false);
 		}
+		break;
+	}
+	case IMPULSE_40: {
+		idFuncRadioChatter::RepeatLast();
+		break;
+	}
 
-// RITUAL BEGIN
-// squirrel: Mode-agnostic buymenus
-		case IMPULSE_100:	AttemptToBuyItem( "weapon_shotgun" );				break;
-		case IMPULSE_101:	AttemptToBuyItem( "weapon_machinegun" );			break;
-		case IMPULSE_102:	AttemptToBuyItem( "weapon_hyperblaster" );			break;
-		case IMPULSE_103:	AttemptToBuyItem( "weapon_grenadelauncher" );		break;
-		case IMPULSE_104:	AttemptToBuyItem( "weapon_nailgun" );				break;
-		case IMPULSE_105:	AttemptToBuyItem( "weapon_rocketlauncher" );		break;
-		case IMPULSE_106:	AttemptToBuyItem( "weapon_railgun" );				break;
-		case IMPULSE_107:	AttemptToBuyItem( "weapon_lightninggun" );			break;
-		case IMPULSE_108:	
+					 // RITUAL BEGIN
+					 // squirrel: Mode-agnostic buymenus
+	case IMPULSE_100:	AttemptToBuyItem("weapon_shotgun");				break;
+	case IMPULSE_101:	AttemptToBuyItem("weapon_machinegun");			break;
+	case IMPULSE_102:	AttemptToBuyItem("weapon_hyperblaster");			break;
+	case IMPULSE_103:	AttemptToBuyItem("weapon_grenadelauncher");		break;
+	case IMPULSE_104:	AttemptToBuyItem("weapon_nailgun");				break;
+	case IMPULSE_105:	AttemptToBuyItem("weapon_rocketlauncher");		break;
+	case IMPULSE_106:	AttemptToBuyItem("weapon_railgun");				break;
+	case IMPULSE_107:	AttemptToBuyItem("weapon_lightninggun");			break;
+
+	case IMPULSE_108:
+	{
+		if (playerLevel < 2)
 		{
-			if (playerLevel < 2)
-			{
-				break;
-			}
+			break;
+		}
 
+		if (heroType == 1)
+		{
+			// Vanguard Dash
 			if (gameLocal.time < dashCooldownTime)
 			{
 				break;
 			}
+
 			idVec3 forward;
 			idVec3 velocity;
+
 			viewAngles.ToVectors(&forward, NULL, NULL);
 			forward.z = 0;
 			forward.Normalize();
+
 			velocity = physicsObj.GetLinearVelocity();
+
 			if (playerLevel >= 3)
 			{
 				velocity.x = forward.x * 1100;
@@ -8627,16 +8681,277 @@ void idPlayer::PerformImpulse( int impulse ) {
 				velocity.x = forward.x * 800;
 				velocity.y = forward.y * 800;
 			}
+
 			physicsObj.SetLinearVelocity(velocity);
 			dashCooldownTime = gameLocal.time + 1000;
-			break;
 		}
+		else if (heroType == 2)
+		{
+			// Striker Speed Boost
+			if (gameLocal.time < speedBoostCooldownTime)
+			{
+				break;
+			}
+
+			speedBoostEndTime = gameLocal.time + 5000;
+			speedBoostCooldownTime = gameLocal.time + 10000;
+
+			gameLocal.Printf("Speed Boost activated!\n");
+		}
+		else if (heroType == 3)
+		{
+			// Medic Heal
+			if (gameLocal.time < healCooldownTime)
+			{
+				gameLocal.Printf("Heal is on cooldown!\n");
+				break;
+			}
+
+			if (health >= 100)
+			{
+				gameLocal.Printf("Health is already full!\n");
+				break;
+			}
+
+			health = health + 25;
+
+			if (health > 100)
+			{
+				health = 100;
+			}
+
+			healCooldownTime = gameLocal.time + 10000;
+
+			gameLocal.Printf("Heal activated! +25 Health!\n");
+		}
+
+		break;
+	}
 
 		case IMPULSE_109:	AttemptToBuyItem( "weapon_napalmgun" );				break;
 		case IMPULSE_110:	/* AttemptToBuyItem( "weapon_dmg" );*/				break;
-		case IMPULSE_111:	break; // Unused
-		case IMPULSE_112:	break; // Unused
-		case IMPULSE_113:	break; // Unused
+
+		case IMPULSE_111:
+		{
+			if (playerLevel < 3) {
+				break;
+			}
+
+			if (heroType == 1) {
+				// Vanguard Energy Shield
+				if (gameLocal.time < shieldCooldownTime) {
+					gameLocal.Printf("Energy Shield is on cooldown!\n");
+					break;
+				}
+
+				shieldEndTime = gameLocal.time + 5000;
+				shieldCooldownTime = gameLocal.time + 15000;
+
+				gameLocal.Printf("Energy Shield activated!\n");
+			}
+			else if (heroType == 2) {
+				// Striker Berserk
+				if (gameLocal.time < berserkCooldownTime) {
+					gameLocal.Printf("Berserk is on cooldown!\n");
+					break;
+				}
+
+				berserkEndTime = gameLocal.time + 8000;
+				berserkCooldownTime = gameLocal.time + 20000;
+
+				gameLocal.Printf("Berserk activated!\n");
+			}
+			else if (heroType == 3) {
+				// Medic Regeneration
+				if (gameLocal.time < regenCooldownTime) {
+					gameLocal.Printf("Regeneration is on cooldown!\n");
+					break;
+				}
+
+				regenEndTime = gameLocal.time + 8000;
+				regenCooldownTime = gameLocal.time + 20000;
+				regenNextHealTime = gameLocal.time + 1000;
+
+				gameLocal.Printf("Regeneration activated!\n");
+			}
+
+			break;
+		}
+
+
+		case IMPULSE_112:
+		{
+			if (playerLevel < 4) {
+				gameLocal.Printf("Ability unlocks at Level 4!\n");
+				break;
+			}
+
+			if (heroType == 1) {
+				// Vanguard Shockwave
+				if (gameLocal.time < ShockwaveCooldownTime) {
+					gameLocal.Printf("Shockwave is on cooldown!\n");
+					break;
+				}
+
+				idVec3 playerPos = GetPhysics()->GetOrigin();
+
+				for (int i = 0; i < gameLocal.num_entities; i++) {
+					idEntity *ent = gameLocal.entities[i];
+
+					if (!ent) {
+						continue;
+					}
+
+					if (!ent->IsType(idAI::GetClassType())) {
+						continue;
+					}
+
+					idVec3 enemyPos = ent->GetPhysics()->GetOrigin();
+
+					if ((enemyPos - playerPos).Length() <= 200.0f) {
+						ent->Damage(this, this, enemyPos - playerPos,
+							"damage_bullet", 5.0f, 0);
+					}
+				}
+
+				ShockwaveCooldownTime = gameLocal.time + 10000;
+				gameLocal.Printf("Shockwave activated!\n");
+			}
+			else if (heroType == 2) {
+				// Striker Life Steal
+				if (gameLocal.time < lifeStealCooldownTime) {
+					gameLocal.Printf("Life Steal is on cooldown!\n");
+					break;
+				}
+
+				lifeStealEndTime = gameLocal.time + 8000;
+				lifeStealCooldownTime = gameLocal.time + 20000;
+
+				gameLocal.Printf("Life Steal activated!\n");
+			}
+			else if (heroType == 3) {
+				// Medic Healing Pulse
+				if (gameLocal.time < healingPulseCooldownTime) {
+					gameLocal.Printf("Healing Pulse is on cooldown!\n");
+					break;
+				}
+
+				// Heal Medic
+				if (health > 0) {
+					health = health + 30;
+
+					if (health > 100) {
+						health = 100;
+					}
+				}
+
+				// Heal nearby friendly players
+				idVec3 playerPos = GetPhysics()->GetOrigin();
+
+				for (int i = 0; i < gameLocal.num_entities; i++) {
+					idEntity *ent = gameLocal.entities[i];
+
+					if (!ent) {
+						continue;
+					}
+
+					if (ent == this) {
+						continue;
+					}
+
+					if (!ent->IsType(idPlayer::GetClassType())) {
+						continue;
+					}
+
+					idPlayer *otherPlayer = static_cast<idPlayer *>(ent);
+
+					if (otherPlayer->health <= 0) {
+						continue;
+					}
+
+					if (gameLocal.isMultiplayer && otherPlayer->team != team) {
+						continue;
+					}
+
+					idVec3 otherPos = otherPlayer->GetPhysics()->GetOrigin();
+
+					if ((otherPos - playerPos).Length() <= 200.0f) {
+						otherPlayer->health = otherPlayer->health + 30;
+
+						if (otherPlayer->health > 100) {
+							otherPlayer->health = 100;
+						}
+					}
+				}
+
+				healingPulseCooldownTime = gameLocal.time + 20000;
+
+				gameLocal.Printf("Healing Pulse activated!\n");
+			}
+
+			break;
+		}
+
+
+case IMPULSE_113:
+{
+	if (playerLevel < 5) {
+		gameLocal.Printf("Ability unlocks at Level 5!\n");
+		break;
+	}
+
+	if (heroType == 1) {
+		// Vanguard Fortify
+		if (gameLocal.time < fortifyCooldownTime) {
+			gameLocal.Printf("Fortify is on cooldown!\n");
+			break;
+		}
+
+		fortifyEndTime = gameLocal.time + 10000;
+		fortifyCooldownTime = gameLocal.time + 30000;
+
+		health = health + 50;
+
+		if (health > 100) {
+			health = 100;
+		}
+
+		gameLocal.Printf("Fortify activated! +50 Health!\n");
+	}
+	else if (heroType == 2) {
+		// Striker Rapid Fire
+		if (gameLocal.time < rapidFireCooldownTime) {
+			gameLocal.Printf("Rapid Fire is on cooldown!\n");
+			break;
+		}
+
+		rapidFireEndTime = gameLocal.time + 8000;
+		rapidFireCooldownTime = gameLocal.time + 30000;
+
+		gameLocal.Printf("Rapid Fire activated!\n");
+	}
+	else if (heroType == 3) {
+		// Medic Nanomachines
+		if (gameLocal.time < emergencyRecoveryCooldownTime) {
+			gameLocal.Printf("Nanomachines is on cooldown!\n");
+			break;
+		}
+
+		health = health + 50;
+
+		if (health > 100) {
+			health = 100;
+		}
+
+		emergencyRecoveryEndTime = gameLocal.time + 3000;
+		emergencyRecoveryCooldownTime = gameLocal.time + 30000;
+
+		gameLocal.Printf("Nanomachines activated! +50 Health and 3 seconds of immunity!\n");
+	}
+
+	break;
+}
+
 		case IMPULSE_114:	break; // Unused
 		case IMPULSE_115:	break; // Unused
 		case IMPULSE_116:	break; // Unused
@@ -8806,6 +9121,10 @@ void idPlayer::AdjustSpeed( void ) {
 	}
 
 	speed *= PowerUpModifier(PMOD_SPEED);
+	if (heroType == 2 && gameLocal.time < speedBoostEndTime)
+	{
+		speed = speed * 1.5f;
+	}
 
 	if ( influenceActive == INFLUENCE_LEVEL3 ) {
 		speed *= 0.33f;
@@ -9337,6 +9656,24 @@ Called every tic for each player
 */
 void idPlayer::Think( void ) {
 	renderEntity_t *headRenderEnt;
+	// Medic Regeneration
+	if (heroType == 3 && health> 0 && gameLocal.time < regenEndTime)
+	{
+		if (gameLocal.time >= regenNextHealTime)
+		{
+			if (health < 100)
+			{
+				health = health + 5;
+
+				if (health > 100)
+				{
+					health = 100;
+				}
+			}
+
+			regenNextHealTime = regenNextHealTime + 1000;
+		}
+	}
  
 	if ( talkingNPC ) {
 		if ( !talkingNPC.IsValid() ) {
@@ -10123,12 +10460,30 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	// RAVEN BEGIN
 	// twhitaker: difficulty levels
 	float modifiedDamageScale = damageScale;
-	
-	if ( !gameLocal.isMultiplayer ) {
-		if ( inflictor != gameLocal.world ) {
-			modifiedDamageScale *= ( 1.0f + gameLocal.GetDifficultyModifier() );
+
+
+
+	// Vanguard damage reduction
+	if (heroType == 1) {
+		if (gameLocal.time < fortifyEndTime) {
+			modifiedDamageScale = modifiedDamageScale * 0.25f;
+		}
+		else if (gameLocal.time < shieldEndTime) {
+			modifiedDamageScale = modifiedDamageScale * 0.5f;
 		}
 	}
+
+	// Medic Nanomachines
+	if (heroType == 3 && gameLocal.time < emergencyRecoveryEndTime) {
+		modifiedDamageScale = 0.0f;
+	}
+
+	if (!gameLocal.isMultiplayer) {
+		if (inflictor != gameLocal.world) {
+			modifiedDamageScale *= (1.0f + gameLocal.GetDifficultyModifier());
+		}
+	}
+
 	// RAVEN END
 
 	if ( forwardDamageEnt.IsValid() ) {
@@ -10187,11 +10542,9 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		lightningEffects = 0;
 		lightningNextTime = gameLocal.GetTime();
 	}
-
 	// We pass in damageScale, because this function calculates a modified damageScale 
 	// based on g_skill, and we don't want to compensate for skill level twice.
-	CalcDamagePoints( inflictor, attacker, &damageDef->dict, damageScale, location, &damage, &armorSave );
-
+	CalcDamagePoints( inflictor, attacker, &damageDef->dict, modifiedDamageScale, location, &damage, &armorSave );
 	//
 	// determine knockback
 	//
@@ -13012,10 +13365,12 @@ void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damag
 	
 	//rvTramCars weren't built on the idActor inheritance hierarchy but need to be treated like one when shot.
 	//TODO: Maybe add a key to entity flags that will allow them to be shot as actors even if they aren't actors?
-	if( !victim || ( !victim->IsType( idActor::GetClassType() ) && !victim->IsType( rvTramCar::GetClassType() ) ) || victim->health <= 0 ) {
+	if (!victim || (!victim->IsType(idActor::GetClassType()) && !victim->IsType(rvTramCar::GetClassType())) || victim->health <= 0) {
 		return;
 	}
-
+	if (victim != this && !gameLocal.isMultiplayer) {
+		HealFromLifeSteal(damage);
+	}
 	bool armorHit = false;
 
 	if( gameLocal.isMultiplayer && victim->IsType( idPlayer::GetClassType() ) ) {

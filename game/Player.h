@@ -297,8 +297,35 @@ public:
 	idAngles				viewAngles;			// player view angles
 	idAngles				cmdAngles;			// player cmd angles
 	int						dashCooldownTime;
+	int						shieldEndTime;
+	int						shieldCooldownTime;
+	int						ShockwaveCooldownTime;
+	int						fortifyEndTime;
+	int						fortifyCooldownTime;
+	int						speedBoostEndTime;
+	int						speedBoostCooldownTime;
+	int						berserkEndTime;
+	int						berserkCooldownTime;
+	int						lifeStealEndTime;
+	int						lifeStealCooldownTime;
+	int						rapidFireEndTime;
+	int						rapidFireCooldownTime;
+	int						healCooldownTime;
+	int						regenEndTime;
+	int						regenCooldownTime;
+	int						regenNextHealTime;
+	int						healingPulseCooldownTime;
+	int						 emergencyRecoveryEndTime;
+	int						emergencyRecoveryCooldownTime;
 	int						playerXP;
 	int						playerLevel;
+	int						heroType;
+	void					SetHero(int hero);
+	int						GetHero() { return heroType; }
+	int 					GetRapidFireEndTime() { return rapidFireEndTime; }
+	int						GetBerserkEndTime() { return berserkEndTime; }
+	int						GetLifeStealEndTime() { return lifeStealEndTime; }
+
 	int						buttonMask;
 	int						oldButtons;
 	int						oldFlags;
@@ -435,7 +462,7 @@ public:
 
 	void					Spawn( void );
 	void					Think( void );
-
+	void					HealFromLifeSteal(int damage);
 	// save games
 	void					Save( idSaveGame *savefile ) const;					// archives object for save game file
 	void					Restore( idRestoreGame *savefile );					// unarchives object from save game file
@@ -624,6 +651,8 @@ public:
 // RITUAL END
 	void					PerformImpulse( int impulse );
 	void					AddXP(int amount);
+	int						GetXP() { return playerXP; }
+	int						GetLevel() { return playerLevel; }
 	void					Spectate( bool spectate, bool force = false );
  	void					ToggleObjectives ( void );
  	void					ToggleScoreboard( void );
