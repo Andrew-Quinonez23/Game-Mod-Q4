@@ -2398,6 +2398,13 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 
 	int	damage = damageDef->GetInt( "damage" ) * damageScale;
 	damage = GetDamageForLocation( damage, location );
+	if (attacker->IsType(idPlayer::GetClassType())) {
+		idPlayer *player = static_cast<idPlayer *>(attacker);
+
+		if (player->GetHero() == 2 && gameLocal.time < player->GetBerserkEndTime()) {
+			damage = damage * 1.5f;
+		}
+	}
 
 	// friendly fire damage
 	bool noDmgFeedback = false;
