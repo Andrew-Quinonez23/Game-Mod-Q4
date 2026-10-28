@@ -1098,6 +1098,9 @@ idPlayer::idPlayer() {
 	emergencyRecoveryEndTime = 0;
 	emergencyRecoveryCooldownTime = 0;
 	playerCredits = 0;
+	for (int i = 0; i < 9; i++) {
+		shopItems[i] = false;
+	}
 	playerXP = 0;
 	playerLevel = 1;
 	heroType = 1;
@@ -8490,7 +8493,115 @@ void idPlayer::AddCredits(int amount) {
 
 	playerCredits = playerCredits + amount;
 
-	gameLocal.Printf("+%d Credits! Total: %d\n", amount, playerCredits);
+	gameLocal.Printf("+%d Credits Total: %d\n", amount, playerCredits);
+}
+
+void idPlayer::BuyShopItem(int item) {
+	const char* names[9] = {
+		"",
+		"Weapon Parts",
+		"Power Core",
+		"Reinforced Plating",
+		"Running Gear",
+		"Vitality Core",
+		"Overdrive Cannon",
+		"Juggernaut Armor",
+		"Ninja Tabbis"
+	};
+
+	int prices[9] = { 0, 200, 250, 200, 200, 300, 300, 300, 300 };
+
+	if (item < 1 || item > 8) {
+		gameLocal.Printf("Invalid item. Use shop to see items\n");
+		return;
+	}
+
+	if (shopItems[item]) {
+		gameLocal.Printf("You already own this item\n");
+		return;
+	}
+
+	// Check items needed for combinations
+	if (item == 6) {
+		if (!shopItems[1] || !shopItems[2]) {
+			gameLocal.Printf("Need Weapon Parts and Power Core\n");
+			return;
+		}
+	}
+
+	if (item == 7) {
+		if (!shopItems[3] || !shopItems[5]) {
+			gameLocal.Printf("Need Reinforced Plating and Vitality Core\n");
+			return;
+		}
+	}
+
+	if (item == 8) {
+		if (!shopItems[4] || !shopItems[5]) {
+			gameLocal.Printf("Need Running Gear and Vitality Core\n");
+			return;
+		}
+	}
+
+	if (playerCredits < prices[item]) {
+		gameLocal.Printf("Not enough credits\n");
+		gameLocal.Printf("You have %d credits\n", playerCredits);
+		return;
+	}
+
+	playerCredits = playerCredits - prices[item];
+
+	// Remove components when upgrading
+	if (item == 6) {
+		shopItems[1] = false;
+		shopItems[2] = false;
+	}
+
+	if (item == 7) {
+		shopItems[3] = false;
+		shopItems[5] = false;
+	}
+
+	if (item == 8) {
+		shopItems[4] = false;
+		shopItems[5] = false;
+	}
+
+	shopItems[item] = true;
+
+	gameLocal.Printf("Purchased %s\n", names[item]);
+	gameLocal.Printf("Credits remaining: %d\n", playerCredits);
+}
+
+void idPlayer::ShowShopInventory() {
+	const char* names[9] = {
+		"",
+		"Weapon Parts",
+		"Power Core",
+		"Reinforced Plating",
+		"Running Gear",
+		"Vitality Core",
+		"Overdrive Cannon",
+		"Juggernaut Armor",
+		"Ninja Tabbis"
+	};
+
+	gameLocal.Printf("=== RocketFun Inventory ===\n");
+
+	bool hasItems = false;
+
+	for (int i = 1; i <= 8; i++) {
+		if (shopItems[i]) {
+			gameLocal.Printf("%s\n", names[i]);
+			hasItems = true;
+		}
+	}
+
+	if (!hasItems) {
+		gameLocal.Printf("Inventory is empty.\n");
+	}
+
+	gameLocal.Printf("Credits: %d\n", playerCredits);
 }
 
 void idPlayer::HealFromLifeSteal(int damage) {
@@ -8711,20 +8822,20 @@ void idPlayer::PerformImpulse( int impulse ) {
 			speedBoostEndTime = gameLocal.time + 5000;
 			speedBoostCooldownTime = gameLocal.time + 10000;
 
-			gameLocal.Printf("Speed Boost activated!\n");
+			gameLocal.Printf("Speed Boost activated\n");
 		}
 		else if (heroType == 3)
 		{
 			// Medic Heal
 			if (gameLocal.time < healCooldownTime)
 			{
-				gameLocal.Printf("Heal is on cooldown!\n");
+				gameLocal.Printf("Heal is on cooldown\n");
 				break;
 			}
 
 			if (health >= 100)
 			{
-				gameLocal.Printf("Health is already full!\n");
+				gameLocal.Printf("Health is already full\n");
 				break;
 			}
 
@@ -8737,7 +8848,7 @@ void idPlayer::PerformImpulse( int impulse ) {
 
 			healCooldownTime = gameLocal.time + 10000;
 
-			gameLocal.Printf("Heal activated! +25 Health!\n");
+			gameLocal.Printf("Heal activated! +25 Health\n");
 		}
 
 		break;
