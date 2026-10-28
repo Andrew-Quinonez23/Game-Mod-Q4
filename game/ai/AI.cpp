@@ -1629,6 +1629,7 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	if (!gameLocal.isMultiplayer && attacker && attacker->IsType(idPlayer::GetClassType())) {
 		idPlayer *player = static_cast <idPlayer*>(attacker);
 		player->AddXP(100);
+		player->AddCredits(150);
 	}
 	// turn off my flashlight, if I had one
 	ProcessEvent( &AI_Flashlight, false );

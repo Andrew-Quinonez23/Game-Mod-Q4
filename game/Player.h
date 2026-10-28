@@ -319,6 +319,9 @@ public:
 	int						emergencyRecoveryCooldownTime;
 	int						playerXP;
 	int						playerLevel;
+	int						playerCredits;
+	void					AddCredits(int amount);
+	int						GetCredits() { return playerCredits; }
 	int						heroType;
 	void					SetHero(int hero);
 	int						GetHero() { return heroType; }

@@ -3102,9 +3102,41 @@ Let the system know about all of our commands
 so it can perform tab completion
 =================
 */
+
+	void Cmd_RocketShop_f(const idCmdArgs &args) {
+		idPlayer *player = gameLocal.GetLocalPlayer();
+
+		if (!player) {
+			return;
+		}
+
+		gameLocal.Printf("\n===== ROCKETFUN SHOP =====\n");
+		gameLocal.Printf("Credits: %d\n\n", player->GetCredits());
+
+		gameLocal.Printf("BASIC ITEMS:\n");
+		gameLocal.Printf("1. Weapon Parts       - 200 (+10%% Damage)\n");
+		gameLocal.Printf("2. Power Core         - 250 (+10%% Fire Rate)\n");
+		gameLocal.Printf("3. Reinforced Plating - 200 (+25 Armor)\n");
+		gameLocal.Printf("4. Running Gear       - 200 (+10%% Speed)\n");
+		gameLocal.Printf("5. Vitality Core      - 300 (+25 Max HP)\n");
+
+		gameLocal.Printf("\nCOMBINED ITEMS:\n");
+		gameLocal.Printf("6. Overdrive Cannon - 300 + Items 1 and 2\n");
+		gameLocal.Printf("   +25%% Damage, +20%% Fire Rate\n");
+
+		gameLocal.Printf("7. Juggernaut Armor - 300 + Items 3 and 5\n");
+		gameLocal.Printf("   +50 Max HP, +50 Armor\n");
+
+		gameLocal.Printf("8. Ninja Tabbis - 300 + Items 4 and 5\n");
+		gameLocal.Printf("   +20%% Speed, +40 Max HP\n");
+
+		gameLocal.Printf("\nUse rfbuy <number> to purchase.\n");
+	}
+
 void idGameLocal::InitConsoleCommands( void ) {
 cmdSystem->AddCommand("playerstatus", Cmd_PlayerStatus_f, CMD_FL_GAME, "shows player level and XP");
 cmdSystem->AddCommand("hero", Cmd_Hero_f, CMD_FL_GAME, "select your hero");
+cmdSystem->AddCommand("shop", Cmd_RocketShop_f, CMD_FL_GAME, "Opens RocketFun shop");
 // RAVEN BEGIN
 // jscott: typeinfo gone - didn't work, it was unfinished
 //	cmdSystem->AddCommand( "listTypeInfo",			ListTypeInfo_f,				CMD_FL_GAME,				"list type info" );
