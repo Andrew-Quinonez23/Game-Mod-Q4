@@ -59,6 +59,13 @@ The XP requirements are:
  Level 3: 250 XP
  Level 4: 450 XP
  Level 5: 700 XP
+ 
+ RocketFun also has a credit system inspired by the gold system in League of Legends.
+
+Every enemy AI kill gives 100 credits. The idea is that players can use those credits to buy items that make their hero stronger.
+
+To open the shop, type shop in the console.
+
 
 You can type playerstatus in the console to see your current level and XP.
 1. Launch Quake 4 using the RocketFun shortcut.
