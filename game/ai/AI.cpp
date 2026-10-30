@@ -1137,6 +1137,10 @@ idAI::Think
 */
 void idAI::Think( void ) {
 
+
+	if (spawnArgs.GetString("target", "")[0] != '\0') {
+		gameLocal.Printf("MINION TARGET: %s\n", spawnArgs.GetString("target"));
+	}
 	// if we are completely closed off from the player, don't do anything at all
 	if ( CheckDormant() ) {
 		return;
@@ -1198,8 +1202,53 @@ void idAI::Think( void ) {
 				UpdateEnemy ( );
 			}
 
+
+			bool rocketMinion =
+				spawnArgs.GetString("spawn_target", "")[0] != '\0';
+
+			if (rocketMinion) {
+				ClearEnemy();
+			}
+			else {
+				if (!aifl.dead) {
+					UpdateEnemy();
+				}
+			}
 			// update state machine
-			UpdateStates();
+			if (spawnArgs.GetString("target", "")[0] == '\0') {
+				UpdateStates();
+			}
+
+			// minion path
+			if (spawnArgs.GetString("target", "")[0] != '\0') {
+				gameLocal.Printf("RocketFun path code is running!\n");
+				const char* pathName = spawnArgs.GetString("target");
+				idEntity* pathPoint = gameLocal.FindEntity(pathName);
+
+				if (pathPoint) {
+					idVec3 goal = pathPoint->GetPhysics()->GetOrigin();
+					idVec3 difference = goal - GetPhysics()->GetOrigin();
+					difference.z = 0;
+
+					if (difference.Length() < 32.0f) {
+						const char* nextPath = pathPoint->spawnArgs.GetString("target");
+
+						if (nextPath[0] != '\0') {
+							spawnArgs.Set("target", nextPath);
+							pathPoint = gameLocal.FindEntity(nextPath);
+						}
+						else {
+							spawnArgs.Delete("target");
+							StopMove(MOVE_STATUS_DONE);
+							pathPoint = NULL;
+						}
+					}
+
+					if (pathPoint) {
+						MoveToEntity(pathPoint, 32.0f);
+					}
+				}
+			}
 
 			// run all movement commands
 			Move();
